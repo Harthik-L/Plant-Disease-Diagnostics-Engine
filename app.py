@@ -8,7 +8,7 @@ st.title("🌿 AI Plant Disease Diagnostics Engine")
 st.write("Upload a high-resolution leaf snapshot to evaluate plant health conditions over backend APIs.")
 
 # TARGET POINT: Adjust this string when shifting execution from local systems to cloud arrays
-API_ENDPOINT = "http://127.0.0.1:8000/predict"
+API_ENDPOINT = "https://lharthik-plant-disease-api.hf.space/predict"
 
 uploaded_file = st.file_uploader("Choose a leaf image file...", type=["jpg", "jpeg", "png"])
 
