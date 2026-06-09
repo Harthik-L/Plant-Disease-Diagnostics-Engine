@@ -4,29 +4,34 @@ import torch.nn as nn
 from torchvision import models, transforms
 from PIL import Image
 import io
+import os
 
 app = FastAPI(title="AI Leaf Doctor Inference Engine", version="1.0.0")
 
-# Determine active runtime target environment
+# Setup runtime computing target
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Verify model checkpoint state
-try:
-    checkpoint = torch.load('plant_model.pth', map_location=device)
-    class_names = checkpoint['classes']
+# Safe runtime verification for weight matrices map
+if os.path.exists('plant_model.pth'):
+    try:
+        checkpoint = torch.load('plant_model.pth', map_location=device)
+        class_names = checkpoint['classes']
 
-    model = models.resnet18()
-    num_ftrs = model.fc.in_features
-    model.fc = nn.Linear(num_ftrs, len(class_names))
-    model.load_state_dict(checkpoint['state_dict'])
-    model.to(device)
-    model.eval()
-    print("🧠 PyTorch Model loaded and compiled successfully into API backend!")
-except Exception as e:
-    print(f"⚠️ Warning: Model checkpoint initialization failed. Ensure train.py is executed. Details: {e}")
+        model = models.resnet18()
+        num_ftrs = model.fc.in_features
+        model.fc = nn.Linear(num_ftrs, len(class_names))
+        model.load_state_dict(checkpoint['state_dict'])
+        model.to(device)
+        model.eval()
+        print("🧠 PyTorch Model loaded and compiled successfully into API backend!")
+    except Exception as e:
+        print(f"❌ Critical error configuring model layers: {e}")
+        model = None
+else:
+    print("⚠️ Warning: 'plant_model.pth' checkpoint missing! Inference routing will remain locked.")
     model = None
 
-# Pure evaluation transformation pipeline
+# Production valuation transform sequence
 inference_transform = transforms.Compose([
     transforms.Resize(256),
     transforms.CenterCrop(224),
@@ -44,11 +49,11 @@ async def predict_image(file: UploadFile = File(...)):
         raise HTTPException(status_code=503, detail="Model runtime weights uninitialized.")
         
     try:
-        # Stream image data from processing buffer
+        # Buffer input binary structures asynchronously
         contents = await file.read()
         image = Image.open(io.BytesIO(contents)).convert('RGB')
         
-        # Apply transformation matrices
+        # Deploy matrix transformations pipeline
         tensor = inference_transform(image).unsqueeze(0).to(device)
         
         with torch.no_grad():
@@ -61,8 +66,10 @@ async def predict_image(file: UploadFile = File(...)):
             "confidence": round(float(confidence.item()) * 100, 2)
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Inference error execution breakdown: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Inference process error: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("api:app", host="127.0.0.1", port=8000, reload=True)
+    # Dynamically query system ports to accommodate remote hosting environments
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("api:app", host="0.0.0.0", port=port)

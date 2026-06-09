@@ -1,0 +1,4 @@
+data/
+plant_model.pth
+__pycache__/
+.streamlit/
